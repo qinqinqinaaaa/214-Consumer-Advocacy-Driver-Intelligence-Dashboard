@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Recommendation Driver Intelligence</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#F7F5FA;color:#2C2438;min-height:100vh}
+/* ── HEADER ── */
+.hdr{background:linear-gradient(135deg,#CFCCE3 0%,#F1837A 100%);padding:18px 32px;
+     display:flex;align-items:center;justify-content:space-between}
+.hdr-title{color:#fff;font-size:18px;font-weight:800;letter-spacing:.3px}
+.hdr-sub{color:rgba(255,255,255,.85);font-size:11px;margin-top:3px}
+.hdr-meta{font-size:11px;color:rgba(255,255,255,.8);text-align:right}
+.flow-bar{background:rgba(255,255,255,.15);padding:8px 32px;display:flex;align-items:center;
+          gap:0;overflow-x:auto}
+.flow-step{font-size:11px;color:rgba(255,255,255,.9);white-space:nowrap;padding:4px 12px;
+           border-radius:99px;background:rgba(255,255,255,.12)}
+.flow-arrow{color:rgba(255,255,255,.5);padding:0 6px;font-size:13px}
+/* ── MAIN LAYOUT ── */
+.main{padding:24px 28px;max-width:1700px;margin:0 auto}
+.section-hdr{font-size:11px;font-weight:800;color:#9B92A8;text-transform:uppercase;
+             letter-spacing:1px;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.section-hdr::before{content:'';width:3px;height:14px;border-radius:2px;background:#F1837A;display:inline-block}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px}
+/* ── CARDS ── */
+.card{background:#fff;border-radius:14px;padding:20px;
+      box-shadow:0 2px 12px rgba(44,36,56,.06);border:1px solid rgba(207,204,227,.5)}
+.card-title{font-size:13px;font-weight:700;color:#2C2438;margin-bottom:4px}
+.card-sub{font-size:11px;color:#9B92A8;margin-bottom:14px}
+/* ── TOGGLE BUTTONS ── */
+.toggle-group{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.tgl{padding:6px 14px;border-radius:99px;border:1.5px solid #CFCCE3;background:#fff;
+     color:#6B637A;font-size:11.5px;font-weight:700;cursor:pointer;transition:all .2s}
+.tgl.active{background:#F1837A;border-color:#F1837A;color:#fff}
+.tgl:hover:not(.active){border-color:#F1837A;color:#F1837A}
+.cat-tgl{padding:5px 11px;border-radius:99px;border:1.5px solid #CFCCE3;background:#fff;
+         color:#6B637A;font-size:11px;font-weight:600;cursor:pointer;transition:all .2s}
+.cat-tgl.active{background:#CFCCE3;border-color:#CFCCE3;color:#2C2438}
+/* ── DEEP DIVE PANEL ── */
+.dive-panel{background:#fff;border-radius:14px;padding:20px;height:100%;
+            box-shadow:0 2px 12px rgba(44,36,56,.06);border:1px solid rgba(207,204,227,.5)}
+.dive-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;
+            height:100%;min-height:300px;color:#9B92A8;text-align:center;gap:10px}
+.dive-empty-icon{font-size:32px}
+.field{margin-bottom:14px}
+.field label{font-size:10px;font-weight:700;color:#9B92A8;text-transform:uppercase;
+             letter-spacing:.7px;display:block;margin-bottom:4px}
+.field p{font-size:12.5px;color:#2C2438;line-height:1.6}
+.dir-badge{display:inline-block;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:700}
+.dir-pos{background:#eafaf1;color:#1a7a4a}
+.dir-neg{background:#fdecea;color:#c0392b}
+.goto-btn{display:inline-block;padding:7px 14px;border-radius:8px;font-size:11.5px;
+          font-weight:700;cursor:pointer;border:none;margin-top:4px;margin-right:6px}
+.goto-coral{background:#FDF0EE;color:#F1837A;border:1.5px solid #F1837A}
+.goto-coral:hover{background:#F1837A;color:#fff}
+.goto-lav{background:#F0EEF8;color:#7B6EA8;border:1.5px solid #CFCCE3}
+.goto-lav:hover{background:#CFCCE3;color:#2C2438}
+/* ── SIMULATOR ── */
+.sim-grid{display:grid;grid-template-columns:1fr 1.6fr;gap:20px}
+.slider-wrap{margin-bottom:18px}
+.slider-hdr{display:flex;justify-content:space-between;margin-bottom:5px}
+.slider-hdr span{font-size:12.5px;font-weight:600;color:#2C2438}
+.slider-val{font-size:13px;font-weight:800;color:#F1837A}
+input[type=range]{width:100%;height:5px;border-radius:3px;background:#CFCCE3;
+                  outline:none;cursor:pointer;-webkit-appearance:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:17px;height:17px;
+  border-radius:50%;background:#F1837A;box-shadow:0 1px 4px rgba(241,131,122,.4);cursor:pointer}
+.select-grp{display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.select-item{display:flex;flex-direction:column;gap:3px;flex:1;min-width:120px}
+.select-item label{font-size:10px;font-weight:700;color:#9B92A8;text-transform:uppercase;letter-spacing:.6px}
+.sel{padding:8px 10px;border-radius:8px;border:1.5px solid #CFCCE3;font-size:12.5px;
+     color:#2C2438;background:#fff;cursor:pointer;outline:none}
+.sel:focus{border-color:#F1837A}
+/* ── PROBABILITY DISPLAY ── */
+.prob-display{background:#F7F5FA;border-radius:12px;padding:18px;margin-bottom:16px}
+.prob-row{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.prob-label{font-size:12px;font-weight:700;width:110px;flex-shrink:0;color:#2C2438}
+.prob-track{flex:1;height:24px;background:#EDE8F7;border-radius:12px;overflow:hidden;position:relative}
+.prob-fill{height:100%;border-radius:12px;transition:width .5s ease;
+           display:flex;align-items:center;padding:0 10px;min-width:40px}
+.prob-fill span{font-size:11px;font-weight:800;color:#fff;white-space:nowrap}
+.prob-delta{font-size:12px;font-weight:800;width:56px;text-align:right;flex-shrink:0}
+.delta-pos{color:#1a7a4a}
+.delta-neg{color:#c0392b}
+.delta-neu{color:#9B92A8}
+/* ── CONTRIB BAR ── */
+.contrib-wrap{background:#fff;border-radius:10px;padding:14px;border:1px solid rgba(207,204,227,.5)}
+.contrib-title{font-size:11px;font-weight:700;color:#9B92A8;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px}
+.contrib-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.contrib-lbl{font-size:11.5px;color:#2C2438;width:130px;flex-shrink:0}
+.contrib-bar-track{flex:1;height:14px;background:#F0EDF7;border-radius:7px;overflow:hidden}
+.contrib-bar-fill{height:100%;border-radius:7px;transition:width .4s;min-width:4px}
+.contrib-pct{font-size:11px;font-weight:700;width:42px;text-align:right;flex-shrink:0}
+/* ── SAVED SCENARIOS ── */
+.saved-list{margin-top:12px;display:flex;flex-direction:column;gap:6px;max-height:160px;overflow-y:auto}
+.saved-item{background:#F7F5FA;border-radius:8px;padding:8px 12px;font-size:11px;
+            display:flex;justify-content:space-between;align-items:center;
+            border:1px solid rgba(207,204,227,.5)}
+.saved-del{color:#E9687A;cursor:pointer;font-weight:700;padding:2px 6px}
+/* ── CLUSTER CARDS ── */
+.cl-card{border-radius:12px;padding:16px;cursor:pointer;transition:all .2s;
+         border:2px solid transparent;box-shadow:0 1px 6px rgba(44,36,56,.06)}
+.cl-card:hover,.cl-card.selected{border-color:currentColor;box-shadow:0 4px 14px rgba(44,36,56,.12)}
+.cl-n{font-size:22px;font-weight:800;margin:4px 0}
+.cl-badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;margin-top:4px}
+/* ── ACTION DETAIL ── */
+.ev-item{display:flex;gap:8px;margin-bottom:7px;font-size:12px;color:#2C2438}
+.ev-item::before{content:'├';color:#CFCCE3;flex-shrink:0}
+.ev-item:last-child::before{content:'└';color:#CFCCE3;flex-shrink:0}
+.step-item{display:flex;gap:8px;margin-bottom:6px;font-size:12px;color:#2C2438}
+.step-item::before{content:'•';color:#F1837A;flex-shrink:0;font-weight:700}
+.risk-chip{display:inline-block;padding:4px 12px;border-radius:99px;font-size:11px;font-weight:700}
+.risk-critical{background:#fdecea;color:#c0392b}
+.risk-high{background:#fef3cd;color:#d68910}
+.risk-medium{background:#edf5fb;color:#1a5276}
+.risk-low{background:#eafaf1;color:#1a7a4a}
+/* ── FILTER PILL GROUP ── */
+.filter-pills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.pill{padding:5px 12px;border-radius:99px;font-size:11px;font-weight:700;cursor:pointer;
+      border:1.5px solid #CFCCE3;color:#6B637A;background:#fff;transition:all .2s}
+.pill.active{background:#F1837A;border-color:#F1837A;color:#fff}
+.pill:hover:not(.active){border-color:#F1837A;color:#F1837A}
+/* ── DIVIDER ── */
+.divider{height:1px;background:linear-gradient(90deg,transparent,#CFCCE3,transparent);margin:8px 0 22px}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div>
+    <div class="hdr-title">Recommendation Driver Intelligence</div>
+    <div class="hdr-sub">IFB214 CW2 · Drunk Elephant (focal) · Tatcha · The Ordinary · n = 6,000 reviews</div>
+  </div>
+  <div class="hdr-meta">LR AUC = 0.9220 · CV-AUC = 0.926 · Holdout AUC = 0.929<br>SHAP top driver: Sentiment Compound = 0.054</div>
+</div>
+<div class="flow-bar" style="background:linear-gradient(135deg,#CFCCE3,#F1837A)">
+  <div class="flow-step">1. Discover Drivers</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-step">2. Understand Mechanisms</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-step">3. Simulate What-If</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-step">4. Target Risk / Opportunity Segments</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-step">5. See Recommended Actions</div>
+</div>
+
+<div class="main">
+
+<!-- ═══════ AREAS 1 + 2 ═══════ -->
+<div class="section-hdr">Areas 1 &amp; 2 &nbsp; Driver Rankings + Deep Dive Analysis</div>
+<div class="two-col" style="grid-template-columns:1.1fr 0.9fr">
+
+  <!-- AREA 1: Driver Rankings -->
+  <div class="card">
+    <div class="card-title">Dual-Model Driver Rankings</div>
+    <div class="card-sub">Click any feature bar → right panel updates with deep-dive analysis</div>
+    <div class="toggle-group">
+      <button class="tgl active" id="tgl-lr"   onclick="setMode('lr')">LR Coefficients</button>
+      <button class="tgl"        id="tgl-shap" onclick="setMode('shap')">RF-SHAP</button>
+      <button class="tgl"        id="tgl-both" onclick="setMode('both')">Compare Both</button>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px" id="cat-filters"></div>
+    <div id="ch-driver" style="height:400px"></div>
+  </div>
+
+  <!-- AREA 2: Deep Dive Panel -->
+  <div class="dive-panel" id="dive-panel">
+    <div class="section-hdr" style="margin-bottom:16px">Deep Dive Panel</div>
+    <div class="dive-empty" id="dive-empty">
+      <div class="dive-empty-icon">&#8592;</div>
+      <div style="font-size:13px;font-weight:700;color:#9B92A8">Click any feature on the left</div>
+      <div style="font-size:11px;color:#B6B3D6">to expand the deep-dive analysis</div>
+    </div>
+    <div id="dive-content" style="display:none">
+      <div class="field"><label>Feature</label>
+        <p id="d-title" style="font-size:15px;font-weight:800"></p></div>
+      <div class="field"><label>Impact Direction</label>
+        <span id="d-dir"></span> &nbsp;
+        <span id="d-or" style="font-size:11px;background:#fef3cd;color:#d68910;padding:2px 8px;border-radius:99px;font-weight:700"></span></div>
+      <div class="field"><label>Interpretation</label><p id="d-interp" style="line-height:1.65"></p></div>
+      <div class="field"><label>Most Sensitive Segment</label><p id="d-seg"></p></div>
+      <div class="divider"></div>
+      <div class="card-title" style="margin-bottom:12px">Segment Sensitivity: Effect of +1 SD Improvement</div>
+      <div id="ch-heat" style="height:220px"></div>
+      <div class="divider"></div>
+      <div class="field"><label>Associated Rule</label><p id="d-rule"></p></div>
+      <div style="margin-top:8px">
+        <button class="goto-btn goto-coral" id="d-action-btn" onclick="gotoAction('')">View Recommended Action</button>
+        <button class="goto-btn goto-lav" onclick="gotoArea(3)">Verify in Simulator</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ AREA 3: SIMULATOR ═══════ -->
+<div class="section-hdr">Area 3 &nbsp; Recommendation Probability Scenario Simulator</div>
+<div class="card" style="margin-bottom:24px">
+  <div class="card-title">Experience Improvement Scenario Simulator</div>
+  <div class="card-sub">Set consumer profile + adjust experience sliders → real-time recommendation probability prediction &nbsp;|&nbsp; Based on LR model: sigmoid(Xβ)</div>
+  <div class="sim-grid">
+    <!-- Left: controls -->
+    <div>
+      <div class="select-grp">
+        <div class="select-item">
+          <label>Consumer Segment</label>
+          <select class="sel" id="sim-cluster" onchange="updateSim()">
+            <option value="0">C0 Cleansing Advocates (P(rec)=0.850)</option>
+            <option value="1" selected>C1 Disappointed (P(rec)=0.197)</option>
+            <option value="2">C2 Efficacy Seekers (P(rec)=0.849)</option>
+            <option value="3">C3 Hydration Seekers (P(rec)=0.917)</option>
+          </select>
+        </div>
+        <div class="select-item">
+          <label>Skin Type</label>
+          <select class="sel" id="sim-skin" onchange="updateSim()">
+            <option value="dry" selected>Dry Skin (-0.150)</option>
+            <option value="oily">Oily Skin (+0.040)</option>
+            <option value="normal">Normal Skin (+0.020)</option>
+            <option value="combination">Combination Skin (+0.080)</option>
+          </select>
+        </div>
+        <div class="select-item">
+          <label>Price Tier</label>
+          <select class="sel" id="sim-price" onchange="updateSim()">
+            <option value="budget">Budget ≤$15 (+0.12)</option>
+            <option value="mid">Mid $16–60 (0)</option>
+            <option value="premium" selected>Premium >$60 (-0.18)</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="background:#F7F5FA;border-radius:10px;padding:16px;margin-bottom:14px">
+        <div style="font-size:11px;font-weight:700;color:#9B92A8;text-transform:uppercase;letter-spacing:.6px;margin-bottom:14px">Experience Improvement Sliders (delta from baseline)</div>
+
+        <div class="slider-wrap">
+          <div class="slider-hdr"><span>Positive Sentiment ↑</span><span class="slider-val" id="sv-sent">0</span></div>
+          <input type="range" id="sl-sent" min="-2" max="2" step="0.1" value="0" oninput="updateSim()">
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:#B6B3D6;margin-top:2px"><span>Worsen -2SD</span><span>Baseline</span><span>Improve +2SD</span></div>
+        </div>
+
+        <div class="slider-wrap">
+          <div class="slider-hdr"><span>Efficacy Theme Mentions ↑</span><span class="slider-val" id="sv-eff">0</span></div>
+          <input type="range" id="sl-eff" min="-2" max="2" step="0.1" value="0" oninput="updateSim()">
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:#B6B3D6;margin-top:2px"><span>Worsen -2SD</span><span>Baseline</span><span>Improve +2SD</span></div>
+        </div>
+
+        <div class="slider-wrap">
+          <div class="slider-hdr"><span>Hydration Experience ↑</span><span class="slider-val" id="sv-hyd">0</span></div>
+          <input type="range" id="sl-hyd" min="-2" max="2" step="0.1" value="0" oninput="updateSim()">
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:#B6B3D6;margin-top:2px"><span>Worsen -2SD</span><span>Baseline</span><span>Improve +2SD</span></div>
+        </div>
+
+        <div class="slider-wrap">
+          <div class="slider-hdr"><span>Irritation / Discomfort Mentions ↓</span><span class="slider-val" id="sv-irr">0</span></div>
+          <input type="range" id="sl-irr" min="-2" max="2" step="0.1" value="0" oninput="updateSim()">
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:#B6B3D6;margin-top:2px"><span>Increase +2SD</span><span>Baseline</span><span>Reduce -2SD</span></div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px">
+        <button class="goto-btn goto-coral" onclick="saveScenario()" style="flex:1">Save Scenario</button>
+        <button class="goto-btn goto-lav"   onclick="resetSim()"     style="flex:1">Reset</button>
+      </div>
+      <div class="saved-list" id="saved-list"></div>
+    </div>
+
+    <!-- Right: results -->
+    <div>
+      <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:#2C2438">Recommendation Probability Forecast</div>
+      <div class="prob-display" id="prob-display"></div>
+      <div class="contrib-wrap" id="contrib-display"></div>
+      <div id="sim-insight" style="margin-top:12px;padding:12px 16px;border-radius:10px;
+           background:linear-gradient(135deg,#FDF0EE,#F7F5FA);border-left:3px solid #F1837A;
+           font-size:12px;color:#2C2438;line-height:1.65"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ AREAS 4 + 5 ═══════ -->
+<div class="section-hdr">Areas 4 &amp; 5 &nbsp; Segment Strategy Map + Action Priority Matrix</div>
+<div class="two-col">
+
+  <!-- AREA 4: Segment Bubbles -->
+  <div class="card">
+    <div class="card-title">Segment Risk / Opportunity Map</div>
+    <div class="card-sub">Bubble size = DE share · Click bubble → expand segment details and linked actions</div>
+    <div id="ch-segment" style="height:320px"></div>
+    <div id="segment-detail" style="display:none;margin-top:14px;padding:16px;
+         border-radius:12px;border:1.5px solid #CFCCE3;background:#F7F5FA">
+    </div>
+  </div>
+
+  <!-- AREA 5: Action Matrix -->
+  <div class="card">
+    <div class="card-title">Evidence-Driven Action Priority Matrix</div>
+    <div class="card-sub">Bubble size = priority score · Click bubble → expand action evidence brief</div>
+    <div class="filter-pills" id="action-filter-pills">
+      <button class="pill active" onclick="filterActions('all',this)">All</button>
+      <button class="pill" onclick="filterActions('Messaging',this)">Messaging</button>
+      <button class="pill" onclick="filterActions('Channel',this)">Channel</button>
+      <button class="pill" onclick="filterActions('Product',this)">Product</button>
+    </div>
+    <div id="ch-action" style="height:300px"></div>
+    <div id="action-detail" style="display:none;margin-top:14px;padding:16px;
+         border-radius:12px;border:1.5px solid #CFCCE3;background:#F7F5FA">
+    </div>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<!-- ══════════════════════════════════════════ PLOTLY CDN -->
+<script src="https://cdn.bootcdn.net/ajax/libs/plotly.js/2.27.0/plotly.min.js"></script>
+<script>
+if(typeof Plotly==='undefined'){var s=document.createElement('script');
+  s.src='https://unpkg.com/plotly.js-dist-min@2.27.0/plotly.min.js';
+  document.head.appendChild(s);}
+</script>
+<!-- ══════════════════════════════════════════ DATA + JS -->
+<script>
+const D = {"N": 6000, "cluster_stats": {"0": {"label": "Cleansing Advocates", "n": 861, "rec": 0.8815, "rating": 4.44, "sent": 0.8315, "mprob": 0.85, "de_n": 273, "de_pct": 0.1365, "de_rec": 0.8315, "themes": {"Hydration": 0.3647, "Texture": 0.2474, "Irritation": 0.3461, "Scent": 0.3566, "Price": 0.1626, "Cleansing": 0.9803, "Efficacy": 0.2451}}, "1": {"label": "Disappointed & Dissatisfied", "n": 917, "rec": 0.3697, "rating": 2.74, "sent": -0.2506, "mprob": 0.197, "de_n": 329, "de_pct": 0.1645, "de_rec": 0.3647, "themes": {"Hydration": 0.2366, "Texture": 0.1788, "Irritation": 0.5093, "Scent": 0.0425, "Price": 0.2203, "Cleansing": 0.0992, "Efficacy": 0.4242}}, "2": {"label": "Efficacy Seekers", "n": 2245, "rec": 0.8494, "rating": 4.31, "sent": 0.8214, "mprob": 0.849, "de_n": 803, "de_pct": 0.4015, "de_rec": 0.8481, "themes": {"Hydration": 0.6227, "Texture": 0.4494, "Irritation": 0.5203, "Scent": 0.1189, "Price": 0.4298, "Cleansing": 0.1136, "Efficacy": 0.6347}}, "3": {"label": "Hydration & Moisture Seekers", "n": 1977, "rec": 0.917, "rating": 4.58, "sent": 0.7375, "mprob": 0.917, "de_n": 595, "de_pct": 0.2975, "de_rec": 0.9025, "themes": {"Hydration": 0.3976, "Texture": 0.2099, "Irritation": 0.1426, "Scent": 0.0582, "Price": 0.2099, "Cleansing": 0.0309, "Efficacy": 0.3171}}}, "brand_stats": {"Drunk Elephant": {"n": 2000, "rec": 0.7825, "rating": 4.11}, "Tatcha": {"n": 2000, "rec": 0.8065, "rating": 4.21}, "The Ordinary": {"n": 2000, "rec": 0.82, "rating": 4.22}}, "lr_coefs": [{"name": "Sentiment Positive", "beta": 1.147, "or": 3.15, "cat": "Sentiment", "dir": "+"}, {"name": "Sentiment Compound", "beta": 1.147, "or": 3.15, "cat": "Sentiment", "dir": "+"}, {"name": "Sentiment Negative", "beta": -0.881, "or": 0.41, "cat": "Sentiment", "dir": "-"}, {"name": "Cluster 3 (Hydration)", "beta": 1.5, "or": 4.48, "cat": "Segment", "dir": "+"}, {"name": "Cluster 1 (Dissatisfied)", "beta": -1.85, "or": 0.16, "cat": "Segment", "dir": "-"}, {"name": "Cluster 2 (Efficacy)", "beta": 0.5, "or": 1.65, "cat": "Segment", "dir": "+"}, {"name": "Theme: Efficacy", "beta": 0.267, "or": 1.31, "cat": "Theme", "dir": "+"}, {"name": "Theme: Cleansing", "beta": 0.2, "or": 1.22, "cat": "Theme", "dir": "+"}, {"name": "Theme: Hydration", "beta": 0.1, "or": 1.11, "cat": "Theme", "dir": "+"}, {"name": "Theme: Irritation", "beta": -0.42, "or": 0.66, "cat": "Theme", "dir": "-"}, {"name": "Theme: Texture", "beta": -0.09, "or": 0.91, "cat": "Theme", "dir": "-"}, {"name": "Review Length (log)", "beta": 0.22, "or": 1.25, "cat": "Behavioural", "dir": "+"}, {"name": "Log Price", "beta": -0.18, "or": 0.84, "cat": "Price", "dir": "-"}, {"name": "Skin: Dry", "beta": -0.15, "or": 0.86, "cat": "Skin Type", "dir": "-"}, {"name": "Skin: Combination", "beta": 0.08, "or": 1.08, "cat": "Skin Type", "dir": "+"}, {"name": "Skin: Normal", "beta": 0.02, "or": 1.02, "cat": "Skin Type", "dir": "+"}, {"name": "Skin: Oily", "beta": 0.04, "or": 1.04, "cat": "Skin Type", "dir": "+"}, {"name": "Brand: The Ordinary", "beta": 0.05, "or": 1.05, "cat": "Brand", "dir": "+"}, {"name": "Brand: Tatcha", "beta": -0.08, "or": 0.92, "cat": "Brand", "dir": "-"}, {"name": "Brand: Drunk Elephant", "beta": -0.24, "or": 0.79, "cat": "Brand", "dir": "-"}], "shap": [{"name": "Sentiment Compound", "shap": 0.054, "cat": "Sentiment", "dir": "+"}, {"name": "Sentiment Positive", "shap": 0.049, "cat": "Sentiment", "dir": "+"}, {"name": "Sentiment Negative", "shap": 0.037, "cat": "Sentiment", "dir": "-"}, {"name": "SVD Text Dim 1", "shap": 0.032, "cat": "Text Embed", "dir": "+"}, {"name": "SVD Text Dim 2", "shap": 0.028, "cat": "Text Embed", "dir": "+"}, {"name": "Theme: Efficacy", "shap": 0.022, "cat": "Theme", "dir": "+"}, {"name": "Theme: Hydration", "shap": 0.019, "cat": "Theme", "dir": "+"}, {"name": "Cluster 1 (Dissatisfied)", "shap": 0.018, "cat": "Segment", "dir": "-"}, {"name": "Cluster 3 (Hydration)", "shap": 0.016, "cat": "Segment", "dir": "+"}, {"name": "Review Length (log)", "shap": 0.015, "cat": "Behavioural", "dir": "+"}, {"name": "Theme: Irritation", "shap": 0.014, "cat": "Theme", "dir": "-"}, {"name": "Skin: Dry", "shap": 0.012, "cat": "Skin Type", "dir": "-"}, {"name": "Log Price", "shap": 0.011, "cat": "Price", "dir": "-"}, {"name": "Theme: Cleansing", "shap": 0.01, "cat": "Theme", "dir": "+"}, {"name": "Brand: Drunk Elephant", "shap": 0.008, "cat": "Brand", "dir": "-"}, {"name": "Skin: Oily", "shap": 0.007, "cat": "Skin Type", "dir": "+"}, {"name": "Brand: Tatcha", "shap": 0.006, "cat": "Brand", "dir": "-"}, {"name": "Theme: Texture", "shap": 0.006, "cat": "Theme", "dir": "-"}, {"name": "Brand: The Ordinary", "shap": 0.005, "cat": "Brand", "dir": "+"}, {"name": "Skin: Combination", "shap": 0.004, "cat": "Skin Type", "dir": "+"}], "heatmap": {"Sentiment+": [9.7, 23.9, 9.8, 5.5], "Sentiment-": [8.2, 17.5, 8.2, 4.7], "Efficacy": [3.1, 4.6, 3.1, 1.8], "Hydration": [1.2, 1.6, 1.2, 0.7], "Irritation": [4.6, 7.5, 4.6, 2.7], "Price": [2.2, 3.0, 2.2, 1.3], "Dry Skin": [1.8, 2.5, 1.8, 1.1]}, "heatmap_feats": ["Sentiment+", "Sentiment-", "Efficacy", "Hydration", "Irritation", "Price", "Dry Skin"], "heatmap_labels": {"Sentiment+": "Sentiment Positive \u2191", "Sentiment-": "Sentiment Negative \u2193", "Efficacy": "Theme: Efficacy \u2191", "Hydration": "Theme: Hydration \u2191", "Irritation": "Theme: Irritation \u2193", "Price": "Log Price \u2193", "Dry Skin": "Dry Skin effect"}, "feat_detail": {"Sentiment Positive": {"title": "Sentiment Positive", "interp": "Explicit positive language (\"love\", \"amazing\", \"perfect\") is the strongest individual recommendation driver. OR = 3.15\u00d7 \u2014 a 1 SD increase in positive sentiment is associated with a 3.15\u00d7 increase in odds of recommendation.", "segment": "Most impactful for C1 (Disappointed) \u2014 where improvement potential is highest (+24pp)", "action": "A1", "action_title": "Rewrite PDP Copy with Sentiment-Aligned Language", "rule": "R4: Hydration \u2192 Positive Sentiment (conf=0.910)"}, "Sentiment Compound": {"title": "Sentiment Compound", "interp": "Overall emotional tone (VADER compound score, -1 to +1) is the #1 SHAP driver (0.054 mean |SHAP|). Acts as a holistic signal of the review experience quality.", "segment": "Universal driver across all segments; largest marginal effect in C1 (+24pp)", "action": "A1", "action_title": "Rewrite PDP Copy with Sentiment-Aligned Language", "rule": "R4: Hydration \u2192 Positive Sentiment (conf=0.910)"}, "Sentiment Negative": {"title": "Sentiment Negative", "interp": "Negative emotional language (irritation, disappointment, frustration) reduces recommendation likelihood. \u03b2 = -0.881, OR = 0.41\u00d7. Third strongest SHAP driver.", "segment": "Most damaging in C1 (Disappointed) \u2014 high negative sentiment cluster", "action": "A7", "action_title": "C1 Post-Purchase CX Recovery Programme", "rule": "R6: C1 + Not Rec \u2192 Rating Low (lift=5.57\u00d7)"}, "Cluster 3 (Hydration)": {"title": "Cluster 3 Membership (Hydration Seekers)", "interp": "Being in C3 (Hydration Seekers) strongly increases recommendation probability. OR = 4.48\u00d7. C3 model P(rec) = 0.917 \u2014 the highest-value advocacy segment.", "segment": "C3 itself \u2014 n=1,977, rec=92%, avg rating=4.58", "action": "A4", "action_title": "C3 Loyalty-Referral Programme", "rule": "R5: Cluster 3 \u2192 Rating High (conf=0.900)"}, "Cluster 1 (Dissatisfied)": {"title": "Cluster 1 Membership (Disappointed)", "interp": "C1 membership is the strongest negative segment driver. OR = 0.16\u00d7. Model P(rec) = 0.197. C1 reviews contain high irritation, negative sentiment, and disappointment.", "segment": "C1 exclusively \u2014 DE: 329 customers (16.4% of DE base)", "action": "A7", "action_title": "C1 Post-Purchase CX Recovery", "rule": "R6: C1 + Not Rec \u2192 Rating Low (lift=5.57\u00d7 \u2014 highest lift rule)"}, "Theme: Efficacy": {"title": "Theme: Efficacy Mentions", "interp": "Reviews mentioning visible results, improvement, and transformation are 1.31\u00d7 more likely to recommend. DE's largest cluster (C2=40.2%) is efficacy-driven.", "segment": "C2 (Efficacy Seekers, n=2,245) \u2014 DE's primary segment", "action": "A3", "action_title": "Back Efficacy Claims with Clinical Data", "rule": "R5: C3 \u2192 Rating High (conf=0.900)"}, "Theme: Hydration": {"title": "Theme: Hydration Mentions", "interp": "Hydration mentions are near-universal (support=0.412). OR = 1.11\u00d7 \u2014 modest but consistent positive signal. Associated with positive sentiment in 91% of cases.", "segment": "C3 (Hydration Seekers) most concentrated; universal across segments", "action": "A2", "action_title": "Clean-Clinical Hydration Narrative", "rule": "R4: Hydration \u2192 Positive Sentiment (conf=0.910, lift=1.05\u00d7)"}, "Theme: Irritation": {"title": "Theme: Irritation Mentions", "interp": "Irritation, breakout, and redness mentions reduce recommendation likelihood by 34% (OR=0.66\u00d7). Disproportionately concentrated in C1.", "segment": "C1 (Disappointed) \u2014 high irritation overlap with dry-skin segment", "action": "A8", "action_title": "Dry Skin SKU Reformulation", "rule": "R3: Dry + Not Rec \u2192 Rating Low (lift=4.89\u00d7)"}, "Log Price": {"title": "Log Price (Product Price)", "interp": "Higher product price creates expectation gaps. OR = 0.84\u00d7 per log-unit increase. 72.9% of DE products are premium (>$60), making this a structural DE-specific risk.", "segment": "Premium segment \u2014 amplifies dissatisfaction when expectations unmet", "action": "A6", "action_title": "Trial Sizes for Premium SKUs", "rule": "R2: Premium + Not Rec \u2192 Rating Low (lift=4.99\u00d7)"}, "Skin: Dry": {"title": "Skin Type: Dry", "interp": "Dry skin consumers are 14% less likely to recommend (OR=0.86\u00d7). DE dry-skin rec=76.2% \u2014 confirmed structural formulation gap by 3 independent methods (LR, RF, Apriori).", "segment": "Dry skin segment (~18.6% of reviews, ~390 DE reviews)", "action": "A5", "action_title": "Skin-Type Suitability Badges", "rule": "R3: Dry + Not Rec \u2192 Rating Low (lift=4.89\u00d7)"}, "Cluster 2 (Efficacy)": {"title": "Cluster 2 (Efficacy)", "interp": "This feature has a positive association with recommendation outcomes.", "segment": "Varies across segments", "action": "A1", "action_title": "See action matrix for details", "rule": "See Task 3 association rules"}, "Theme: Cleansing": {"title": "Theme: Cleansing", "interp": "This feature has a positive association with recommendation outcomes.", "segment": "Varies across segments", "action": "A1", "action_title": "See action matrix for details", "rule": "See Task 3 association rules"}, "Theme: Texture": {"title": "Theme: Texture", "interp": "This feature has a negative association with recommendation outcomes.", "segment": "Varies across segments", "action": "A1", "action_title": "See action matrix for details", "rule": "See Task 3 association rules"}, "Review Length (log)": {"title": "Review Length (log)", "interp": "This feature has a positive association with recommendation outcomes.", "segment": "Varies across segments", "action": "A1", "action_title": "See action matrix for details", "rule": "See Task 3 association rules"}, "Skin: Combination": {"title": "Skin: Combination", "interp": "This feature has a positive association with recommendation outcomes.", "segment": "Varies across segments", "action": "A1", "action_title": "See action matrix for details", "rule": "See Task 3 association rules"}, "Skin: Normal": {"title": "Skin: Normal", "interp": "This feature has a positive association with recommendation outcomes.", "segment": "Varies across segments", "action": "A1", "action_title": "See action matrix for details", "rule": "See Task 3 association rules"}, "Skin: Oily": {"title": "Skin: Oily", "interp": "This feature has a positive association with recommendation outcomes.", "segment": "Varies across segments", "action": "A1", "action_title": "See action matrix for details", "rule": "See Task 3 association rules"}, "Brand: The Ordinary": {"title": "Brand: The Ordinary", "interp": "This feature has a positive association with recommendation outcomes.", "segment": "Varies across segments", "action": "A1", "action_title": "See action matrix for details", "rule": "See Task 3 association rules"}, "Brand: Tatcha": {"title": "Brand: Tatcha", "interp": "This feature has a negative association with recommendation outcomes.", "segment": "Varies across segments", "action": "A1", "action_title": "See action matrix for details", "rule": "See Task 3 association rules"}, "Brand: Drunk Elephant": {"title": "Brand: Drunk Elephant", "interp": "This feature has a negative association with recommendation outcomes.", "segment": "Varies across segments", "action": "A1", "action_title": "See action matrix for details", "rule": "See Task 3 association rules"}, "SVD Text Dim 1": {"title": "SVD Text Dim 1", "interp": "This feature has a positive association with recommendation outcomes.", "segment": "Varies across segments", "action": "A1", "action_title": "See action matrix for details", "rule": "See Task 3 association rules"}, "SVD Text Dim 2": {"title": "SVD Text Dim 2", "interp": "This feature has a positive association with recommendation outcomes.", "segment": "Varies across segments", "action": "A1", "action_title": "See action matrix for details", "rule": "See Task 3 association rules"}}, "actions": [{"id": "A1", "title": "Rewrite PDP Copy", "subtitle": "Sentiment-Aligned Language Triggers", "cat": "Messaging", "impact": 4.5, "feas": 4.8, "ev": 5, "score": 21.6, "color": "#F1837A", "evidence": ["[T4] OR(Sent+)=3.15\u00d7 \u2014 strongest individual driver (SHAP rank #1)", "[T2] DE model P(rec)=0.646 \u2014 lowest of 3 brands (vs TO=0.704)", "[T3] R4: Hydration\u2192Sentiment Positive, conf=0.910", "[T4] SHAP Compound=0.054, Positive=0.049 \u2014 top 2 features"], "steps": ["Audit all DE PDP copy for passive/functional language", "Replace with experience-first, emotionally resonant language", "A/B test sentiment-aligned copy vs control on 3 top SKUs"], "outcome": "Higher DE PDP conversion; close DE-TO recommendation gap (5.8pp)", "cluster_link": null, "rule": "R4"}, {"id": "A3", "title": "Clinical Efficacy Evidence", "subtitle": "Published Trial Data for Top SKUs", "cat": "Messaging", "impact": 4.5, "feas": 4.2, "ev": 4, "score": 18.9, "color": "#F1837A", "evidence": ["[T2] DE dominant cluster = C2 Efficacy Seekers (40.2%, n=803)", "[T4] OR(Efficacy)=1.31\u00d7 \u2014 SHAP rank #6 (0.022)", "[T2] C2 model P(rec)=0.849; activation requires proof of results", "[T3] R5: C3\u2192Rating High, conf=0.900"], "steps": ["Commission third-party efficacy study for top 3 DE SKUs", "Add \"Clinically Proven. Visibly Different.\" badges", "Develop ingredient-science content series targeting C2 reviewers"], "outcome": "Activate clean-clinical identity; convert C2 \u2014 DE's largest segment", "cluster_link": 2, "rule": "R5"}, {"id": "A6", "title": "Trial Sizes for Premium SKUs", "subtitle": "Lower Entry Barrier >$60 Products", "cat": "Channel", "impact": 4.5, "feas": 4.0, "ev": 4, "score": 18.0, "color": "#F1837A", "evidence": ["[T1] 72.9% DE products premium (>$60); price median=$68", "[T3] R2: Premium+Not Rec\u2192Rating Low, lift=4.99\u00d7, conf=0.738", "[T4] OR(Log Price)=0.84\u00d7 \u2014 price headwind confirmed", "[T4] SHAP Log Price=0.011 (consistent negative driver)"], "steps": ["Launch 10-15ml trial sizes for top 5 DE premium SKUs", "Bundle trial with full-size purchase programme", "Track trial-to-full-size conversion rate"], "outcome": "Lower entry barrier; convert price-hesitant first-time buyers", "cluster_link": null, "rule": "R2"}, {"id": "A5", "title": "Skin-Type Suitability Badges", "subtitle": "PDP + Shelf Identification", "cat": "Channel", "impact": 3.2, "feas": 4.8, "ev": 3, "score": 15.4, "color": "#F8B2A2", "evidence": ["[T1] DE dry-skin rec=76.2% \u2014 lowest among DE skin types (n=390)", "[T3] R3: Dry+Not Rec\u2192Rating Low, lift=4.89\u00d7, conf=0.723", "[T4] OR(Dry Skin)=0.86\u00d7; confirmed by LR, RF, SHAP (3 methods)"], "steps": ["Audit all DE SKUs for dry/oily/combination compatibility", "Add verified suitability badges on PDPs", "Pilot with top 5 SKUs; A/B test impact on returns"], "outcome": "Reduce dry-skin misfit purchases; protect premium brand reputation", "cluster_link": null, "rule": "R3"}, {"id": "A4", "title": "C3 Loyalty Referral Programme", "subtitle": "Monetise Advocate Segment", "cat": "Channel", "impact": 3.5, "feas": 4.3, "ev": 3, "score": 15.1, "color": "#F8B2A2", "evidence": ["[T2] DE C3 n=595, raw rec rate=90.3%; overall C3 P(rec)=0.917", "[T3] R5: C3\u2192Rating High, conf=0.900, lift=1.16\u00d7", "[T4] SHAP C3=0.016 (strong positive segment driver)"], "steps": ["Design referral programme for C3-profile customers", "Offer loyalty points for detailed reviews and referrals", "Track customer acquisition cost reduction over 6 months"], "outcome": "Monetise DE high-satisfaction C3 base; lower CAC through organic advocacy", "cluster_link": 3, "rule": "R5"}, {"id": "A2", "title": "Hydration Narrative Reframe", "subtitle": "Clinical Outcome vs Moisture Claim", "cat": "Messaging", "impact": 3.5, "feas": 4.2, "ev": 3, "score": 14.7, "color": "#F8B2A2", "evidence": ["[T2] DE primary cluster=C2 Efficacy (40.2%); C3 Hydration=only 29.8%", "[T4] OR(Hydration)=1.11\u00d7 \u2014 modest, near-baseline effect", "[T3] R4 lift=1.05\u00d7 (hydration is ubiquitous, not discriminative)"], "steps": ["Reframe hydration as \"clinically-verified moisture barrier protection\"", "Differentiate from Tatcha (luxury) and TO (basic) hydration positioning", "Align with BioA8 technology narrative for DE brand identity"], "outcome": "Protect premium positioning; frame hydration as efficacy evidence", "cluster_link": 2, "rule": "R4"}, {"id": "A7", "title": "C1 Post-Purchase CX Recovery", "subtitle": "Recover 329 Disappointed Customers", "cat": "Product", "impact": 4.2, "feas": 3.2, "ev": 5, "score": 13.4, "color": "#CFCCE3", "evidence": ["[T2] DE C1=329 customers (16.4% of DE base); model P(rec)=0.197", "[T3] R6: C1+Not Rec\u2192Rating Low, lift=5.57\u00d7 \u2014 HIGHEST lift rule", "[T4] SHAP C1=0.018 (strongest negative segment driver)", "[T4] LR model P(rec)=0.197 independently confirmed"], "steps": ["Deploy 14-day post-purchase check-in for C1-profile customers", "Trigger on negative sentiment keywords (irritation, breakout)", "Offer personalised product consultation and swap option"], "outcome": "Recover 329 DE disappointed customers; protect NPS at premium tier", "cluster_link": 1, "rule": "R6"}, {"id": "A8", "title": "Dry Skin SKU Reformulation", "subtitle": "Close Structural Formulation Gap", "cat": "Product", "impact": 4.8, "feas": 2.0, "ev": 4, "score": 9.6, "color": "#B6B3D6", "evidence": ["[T1] DE dry rec=76.2% below overall DE avg 78.2%", "[T3] R3: Dry+Not Rec\u2192Rating Low, lift=4.89\u00d7", "[T4] 3-method convergence: LR OR=0.86\u00d7, RF confirms, SHAP rank #12"], "steps": ["Initiate R&D programme targeting dry-skin formulation gaps", "Benchmark barrier function vs competitor dry-skin performance", "Target: close dry-skin satisfaction gap to within 2pp of DE average"], "outcome": "Structural fix for dry-skin consumers; premium brand cannot afford exclusions", "cluster_link": 1, "rule": "R3"}, {"id": "A9", "title": "C1 Root-Cause R&D Programme", "subtitle": "Systemic Fix \u2014 Highest Long-Term ROI", "cat": "Product", "impact": 5.0, "feas": 1.8, "ev": 5, "score": 9.0, "color": "#B6B3D6", "evidence": ["[T2] C1 n=329 DE (16.4%); avg rating=2.74 vs C3=4.58", "[T3] R6 lift=5.57\u00d7 \u2014 highest lift rule in entire dataset", "[T4] SHAP C1=0.018; LR confirms structural failure pattern", "[T4] C1 model P(rec)=0.197 \u2014 persistent across all years"], "steps": ["Deep NLP analysis of all 329 DE C1 reviews for failure modes", "Present findings to R&D as priority brief with risk quantification", "Monitor C1 segment size monthly; target: reduce from 16.4% to <12%"], "outcome": "Systemic DE product fix; highest long-term ROI for premium clean-clinical brand", "cluster_link": 1, "rule": "R6"}], "cluster_actions": {"0": ["A1", "A5"], "1": ["A7", "A9", "A8"], "2": ["A3", "A2"], "3": ["A4", "A1"]}};
+
+// ── PALETTE ──────────────────────────────────────────────
+const PAL={
+  coral:'#F1837A', rose:'#E9687A', lav:'#B6B3D6',
+  lavM:'#CFCCE3',  pchM:'#F8B2A2', bg:'#F7F5FA',
+  dark:'#2C2438',  mid:'#6B637A',  light:'#9B92A8'
+};
+const CL_COL=[PAL.lavM,PAL.rose,PAL.coral,PAL.pchM];
+const CL_NAME=['C0 Cleansing','C1 Disappointed','C2 Efficacy','C3 Hydration'];
+const CL_RISK=['Low','Critical','Low','Low'];
+const CL_RISK_COL={Low:'#eafaf1',Critical:'#fdecea'};
+
+// ── GLOBALS ───────────────────────────────────────────────
+let mode='lr', activeCat='all', activeFeature=null, savedScenarios=[];
+const CFG={responsive:true,displayModeBar:false};
+function pbase(){return {paper_bgcolor:'rgba(0,0,0,0)',plot_bgcolor:'rgba(0,0,0,0)',
+  font:{family:'Segoe UI,system-ui,sans-serif',color:PAL.dark},
+  margin:{t:20,r:20,b:50,l:180}};}
+
+// ══════════════════════════════════════════════════════════
+// AREA 1: DRIVER CHART
+// ══════════════════════════════════════════════════════════
+const CATS=['all','Sentiment','Theme','Segment','Price','Skin Type','Brand','Behavioural','Text Embed'];
+const CAT_LABELS={'all':'All','Sentiment':'Sentiment','Theme':'Themes','Segment':'Segments',
+  'Price':'Price','Skin Type':'Skin','Brand':'Brand','Behavioural':'Behaviour','Text Embed':'Text'};
+
+function buildCatFilters(){
+  const wrap=document.getElementById('cat-filters');
+  CATS.forEach(c=>{
+    const b=document.createElement('button');
+    b.className='cat-tgl'+(c==='all'?' active':'');
+    b.textContent=CAT_LABELS[c]||c;
+    b.onclick=()=>{
+      document.querySelectorAll('.cat-tgl').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active'); activeCat=c; drawDriver();
+    };
+    wrap.appendChild(b);
+  });
+}
+
+function setMode(m){
+  mode=m;
+  ['lr','shap','both'].forEach(k=>document.getElementById('tgl-'+k).classList.toggle('active',k===m));
+  drawDriver();
+}
+
+function getFiltered(arr, catKey){
+  if(activeCat==='all') return arr;
+  return arr.filter(f=>f.cat===activeCat);
+}
+
+function drawDriver(){
+  let traces=[], layout={};
+  if(mode==='lr'){
+    const data=getFiltered(D.lr_coefs,'cat');
+    const sorted=[...data].sort((a,b)=>Math.abs(a.beta)-Math.abs(b.beta));
+    const names=sorted.map(f=>f.name);
+    const vals=sorted.map(f=>f.beta);
+    const cols=sorted.map(f=>f.dir==='+'?PAL.coral:PAL.rose);
+    traces=[{type:'bar',orientation:'h',x:vals,y:names,
+      marker:{color:cols,line:{width:0}},
+      text:sorted.map(f=>(f.dir==='+'?'+':'')+f.beta.toFixed(3)+'  OR='+f.or+'×'),
+      textposition:'outside',
+      hovertemplate:'<b>%{y}</b><br>β = %{x:.4f}<extra></extra>'}];
+    layout={...pbase(),title:{text:'LR Coefficients (β, standardised)',font:{size:12}},
+      xaxis:{title:'Standardised β',showgrid:true,gridcolor:'#F0EDF7',zeroline:true,zerolinecolor:'#CFCCE3',zerolinewidth:2},
+      yaxis:{automargin:true,tickfont:{size:10}},margin:{t:30,r:120,b:50,l:200}};
+  } else if(mode==='shap'){
+    const data=getFiltered(D.shap,'cat');
+    const sorted=[...data].sort((a,b)=>a.shap-b.shap);
+    const names=sorted.map(f=>f.name);
+    const vals=sorted.map(f=>f.shap);
+    const cols=sorted.map(f=>f.dir==='+'?PAL.coral:PAL.rose);
+    traces=[{type:'bar',orientation:'h',x:vals,y:names,
+      marker:{color:cols,line:{width:0}},
+      text:sorted.map(f=>f.shap.toFixed(4)),textposition:'outside',
+      hovertemplate:'<b>%{y}</b><br>Mean |SHAP| = %{x:.4f}<extra></extra>'}];
+    layout={...pbase(),title:{text:'RF-SHAP Feature Importance (Mean |SHAP|)',font:{size:12}},
+      xaxis:{title:'Mean |SHAP| Value',showgrid:true,gridcolor:'#F0EDF7'},
+      yaxis:{automargin:true,tickfont:{size:10}},margin:{t:30,r:80,b:50,l:200}};
+  } else {
+    // Both — scatter LR vs SHAP (common features)
+    const lrMap={};
+    D.lr_coefs.forEach(f=>lrMap[f.name]={beta:f.beta,or:f.or,dir:f.dir,cat:f.cat});
+    const common=D.shap.filter(f=>lrMap[f.name]);
+    const filtered=activeCat==='all'?common:common.filter(f=>f.cat===activeCat);
+    const agree=filtered.map(f=>lrMap[f.name].dir===f.dir);
+    traces=[{
+      type:'scatter',mode:'markers+text',
+      x:filtered.map(f=>lrMap[f.name].beta),
+      y:filtered.map(f=>f.shap),
+      text:filtered.map(f=>f.name.length>18?f.name.slice(0,16)+'..':f.name),
+      textposition:'top center',textfont:{size:9},
+      marker:{color:agree.map(a=>a?PAL.coral:PAL.rose),size:10,
+        symbol:agree.map(a=>a?'circle':'diamond'),
+        line:{color:'white',width:1}},
+      customdata:filtered.map((f,i)=>[f.name,agree[i]?'一致 ✅':'差异 ⚠️']),
+      hovertemplate:'<b>%{customdata[0]}</b><br>β=%{x:.3f} · SHAP=%{y:.4f}<br>%{customdata[1]}<extra></extra>'
+    }];
+    layout={...pbase(),
+      xaxis:{title:'LR 系数 β',showgrid:true,gridcolor:'#F0EDF7',zeroline:true,zerolinecolor:'#CFCCE3'},
+      yaxis:{title:'SHAP 重要度',showgrid:true,gridcolor:'#F0EDF7'},
+      margin:{t:30,r:30,b:60,l:60},
+      shapes:[{type:'line',x0:0,x1:0,y0:0,y1:1,xref:'x',yref:'paper',
+        line:{color:'#CFCCE3',width:1.5,dash:'dot'}}],
+      annotations:[
+        {x:0.5,y:0.97,xref:'paper',yref:'paper',text:'● Both agree ✅',showarrow:false,font:{size:10,color:PAL.coral}},
+        {x:0.5,y:0.90,xref:'paper',yref:'paper',text:'◆ Diverge ⚠️',showarrow:false,font:{size:10,color:PAL.rose}}
+      ]
+    };
+  }
+
+  Plotly.newPlot('ch-driver',traces,layout,CFG);
+
+  document.getElementById('ch-driver').on('plotly_click',function(ev){
+    const pt=ev.points[0];
+    const name=mode==='both'?pt.customdata[0]:pt.y;
+    if(name) showDeepDive(name);
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+// AREA 2: DEEP DIVE PANEL
+// ══════════════════════════════════════════════════════════
+function showDeepDive(name){
+  activeFeature=name;
+  const fd=D.feat_detail[name];
+  if(!fd)return;
+  document.getElementById('dive-empty').style.display='none';
+  document.getElementById('dive-content').style.display='block';
+
+  document.getElementById('d-title').textContent=fd.title;
+
+  // Find LR / SHAP data
+  const lr=D.lr_coefs.find(f=>f.name===name);
+  const sh=D.shap.find(f=>f.name===name);
+  const dir=(lr||sh||{dir:'+'}).dir;
+
+  const dirEl=document.getElementById('d-dir');
+  dirEl.innerHTML=dir==='+'
+    ?'<span class="dir-badge dir-pos">+ Positive &rarr; Increases Recommendation</span>'
+    :'<span class="dir-badge dir-neg">- Negative &rarr; Decreases Recommendation</span>';
+
+  const orEl=document.getElementById('d-or');
+  if(lr&&lr.or) orEl.textContent='OR = '+lr.or+'×';
+  else if(sh) orEl.textContent='SHAP = '+sh.shap.toFixed(4);
+  else orEl.textContent='';
+
+  document.getElementById('d-interp').textContent=fd.interp;
+  document.getElementById('d-seg').textContent=fd.seg;
+  document.getElementById('d-rule').textContent=fd.rule;
+
+  const ab=document.getElementById('d-action-btn');
+  ab.textContent='→ 行动 '+fd.action+': '+fd.action_title;
+  ab.onclick=()=>gotoAction(fd.action);
+
+  // Sensitivity mini-heatmap for this feature
+  drawMiniHeat(name);
+}
+
+function drawMiniHeat(featName){
+  // Find the closest heatmap key
+  const hkeys=Object.keys(D.heatmap);
+  let hkey=hkeys.find(k=>featName.toLowerCase().includes(k.toLowerCase().split(' ')[0]));
+  if(!hkey) hkey=hkeys[0];
+
+  const vals=D.heatmap[hkey];
+  const clNames=['C0\n清洁','C1\n失望','C2\n功效','C3\n补水'];
+  const cols=vals.map(v=>v>=20?PAL.rose:v>=10?PAL.coral:v>=5?PAL.pchM:PAL.lavM);
+
+  Plotly.newPlot('ch-heat',[{
+    type:'bar',x:clNames,y:vals,
+    marker:{color:cols,line:{width:0}},
+    text:vals.map(v=>'+'+v+'%'),textposition:'outside',
+    hovertemplate:'%{x}: +%{y:.1f}pp improvement<extra></extra>'
+  }],{
+    ...pbase(),
+    title:{text:D.heatmap_labels[hkey]||hkey,font:{size:11}},
+    yaxis:{title:'P(rec) Improvement (pp)',showgrid:true,gridcolor:'#F0EDF7',range:[0,Math.max(...vals)*1.35]},
+    xaxis:{showgrid:false},
+    margin:{t:36,r:20,b:50,l:60},
+    annotations:[{x:1,y:Math.max(...vals)*1.25,
+      text:vals[1]===Math.max(...vals)?'C1 most sensitive':'Most sensitive segment',
+      showarrow:true,ax:40,ay:-20,
+      font:{size:9,color:PAL.rose},arrowcolor:PAL.rose,arrowsize:.8}]
+  },CFG);
+}
+
+// ══════════════════════════════════════════════════════════
+// AREA 3: SIMULATOR
+// ══════════════════════════════════════════════════════════
+function sigmoid(x){return 1/(1+Math.exp(-x));}
+function logit(p){p=Math.max(.001,Math.min(.999,p));return Math.log(p/(1-p));}
+
+const SKIN_ADJ={dry:-0.150,oily:0.040,normal:0.020,combination:0.080};
+const PRICE_ADJ={budget:0.12,mid:0.00,premium:-0.18};
+const SIM_COEF={sent:1.147,eff:0.267,hyd:0.100,irr:-0.420};
+const CL_BASE_PROB={0:0.850,1:0.197,2:0.849,3:0.917};
+const SIM_LABELS={sent:'Positive Sentiment ↑',eff:'Efficacy Mentions ↑',hyd:'Hydration Experience ↑',irr:'Irritation Reduction ↓'};
+const SIM_COLS={sent:PAL.coral,eff:'#1a7a4a',hyd:'#2471a3',irr:'#e67e22'};
+
+function getSimValues(){
+  return {
+    cl:   parseInt(document.getElementById('sim-cluster').value),
+    skin: document.getElementById('sim-skin').value,
+    price:document.getElementById('sim-price').value,
+    sent: parseFloat(document.getElementById('sl-sent').value),
+    eff:  parseFloat(document.getElementById('sl-eff').value),
+    hyd:  parseFloat(document.getElementById('sl-hyd').value),
+    irr:  parseFloat(document.getElementById('sl-irr').value),
+  };
+}
+
+function calcProb(cl,skin,price,dSent,dEff,dHyd,dIrr){
+  const baseLogit=logit(CL_BASE_PROB[cl])+SKIN_ADJ[skin]+PRICE_ADJ[price];
+  const delta=SIM_COEF.sent*dSent+SIM_COEF.eff*dEff+SIM_COEF.hyd*dHyd+SIM_COEF.irr*(-dIrr);
+  return sigmoid(baseLogit+delta);
+}
+
+function calcContrib(cl,skin,price,dSent,dEff,dHyd,dIrr){
+  const baseP=calcProb(cl,skin,price,0,0,0,0);
+  return {
+    base:baseP,
+    sent: sigmoid(logit(CL_BASE_PROB[cl])+SKIN_ADJ[skin]+PRICE_ADJ[price]+SIM_COEF.sent*dSent)-baseP,
+    eff:  sigmoid(logit(CL_BASE_PROB[cl])+SKIN_ADJ[skin]+PRICE_ADJ[price]+SIM_COEF.eff*dEff)-baseP,
+    hyd:  sigmoid(logit(CL_BASE_PROB[cl])+SKIN_ADJ[skin]+PRICE_ADJ[price]+SIM_COEF.hyd*dHyd)-baseP,
+    irr:  sigmoid(logit(CL_BASE_PROB[cl])+SKIN_ADJ[skin]+PRICE_ADJ[price]+SIM_COEF.irr*(-dIrr))-baseP,
+  };
+}
+
+function updateSim(){
+  const v=getSimValues();
+  document.getElementById('sv-sent').textContent=(v.sent>=0?'+':'')+v.sent.toFixed(1)+'SD';
+  document.getElementById('sv-eff').textContent=(v.eff>=0?'+':'')+v.eff.toFixed(1)+'SD';
+  document.getElementById('sv-hyd').textContent=(v.hyd>=0?'+':'')+v.hyd.toFixed(1)+'SD';
+  document.getElementById('sv-irr').textContent=(v.irr>=0?'+':'')+v.irr.toFixed(1)+'SD';
+
+  const baseP=calcProb(v.cl,v.skin,v.price,0,0,0,0);
+  const newP=calcProb(v.cl,v.skin,v.price,v.sent,v.eff,v.hyd,v.irr);
+  const contrib=calcContrib(v.cl,v.skin,v.price,v.sent,v.eff,v.hyd,v.irr);
+  const delta=newP-baseP;
+
+  // Probability bars
+  const probHTML=`
+    <div class="prob-row">
+      <div class="prob-label">Current Baseline</div>
+      <div class="prob-track">
+        <div class="prob-fill" style="width:${(baseP*100).toFixed(1)}%;background:${PAL.lav}">
+          <span>${(baseP*100).toFixed(1)}%</span></div></div>
+      <div class="prob-delta delta-neu">-</div>
+    </div>
+    <div class="prob-row">
+      <div class="prob-label" style="color:#F1837A;font-weight:800">Simulated Outcome</div>
+      <div class="prob-track">
+        <div class="prob-fill" style="width:${(newP*100).toFixed(1)}%;background:${delta>=0?PAL.coral:PAL.rose}">
+          <span>${(newP*100).toFixed(1)}%</span></div></div>
+      <div class="prob-delta ${delta>=0?'delta-pos':'delta-neg'}">${delta>=0?'+':''}${(delta*100).toFixed(1)}pp</div>
+    </div>`;
+  document.getElementById('prob-display').innerHTML=probHTML;
+
+  // Contributions
+  const contribs=[
+    {key:'sent',val:contrib.sent},
+    {key:'eff', val:contrib.eff},
+    {key:'hyd', val:contrib.hyd},
+    {key:'irr', val:contrib.irr},
+  ].filter(c=>Math.abs(c.val)>0.001);
+  contribs.sort((a,b)=>Math.abs(b.val)-Math.abs(a.val));
+
+  const totalMag=contribs.reduce((s,c)=>s+Math.abs(c.val),0)||1;
+  let cHTML=`<div class="contrib-title">Factor Contribution Breakdown</div>`;
+  if(contribs.length===0){
+    cHTML+='<div style="font-size:12px;color:#9B92A8;text-align:center;padding:12px">All sliders at baseline — adjust sliders to simulate changes</div>';
+  } else {
+    contribs.forEach(c=>{
+      const pct=(Math.abs(c.val)/totalMag*100).toFixed(0);
+      const bw=(Math.abs(c.val)/totalMag*100).toFixed(0);
+      cHTML+=`<div class="contrib-row">
+        <div class="contrib-lbl">${SIM_LABELS[c.key]}</div>
+        <div class="contrib-bar-track"><div class="contrib-bar-fill"
+          style="width:${bw}%;background:${SIM_COLS[c.key]}"></div></div>
+        <div class="contrib-pct" style="color:${SIM_COLS[c.key]}">${pct}%</div>
+      </div>`;
+    });
+  }
+  document.getElementById('contrib-display').innerHTML=cHTML;
+
+  // Insight text
+  let insight='';
+  if(Math.abs(delta)<0.005){
+    insight='All sliders at baseline. Adjust sliders above to simulate experience improvement scenarios.';
+  } else if(contribs.length>0){
+    const top=contribs[0];
+    const topPct=(Math.abs(top.val)/totalMag*100).toFixed(0);
+    const dir=delta>=0?'increase':'decrease';
+    insight=`Under this scenario, the estimated P(rec) for C${v.cl} consumers would <b style="color:${delta>=0?'#1a7a4a':'#c0392b'}">${dir} by ${(Math.abs(delta)*100).toFixed(1)}pp</b> (baseline ${(baseP*100).toFixed(1)}% &rarr; simulated ${(newP*100).toFixed(1)}%).
+    Largest contributor: <b>${SIM_LABELS[top.key]}</b> (${topPct}% of total change).
+    ${delta>0.15?'Consider prioritising product experience improvements aligned with A1 (PDP copy) and A7 (CX recovery).':''}
+    ${v.cl===1&&delta>0?'C1 (Disappointed) consumers show the highest sensitivity to sentiment improvements — directly supports the A7 CX Recovery programme.':''}`;
+  }
+  document.getElementById('sim-insight').innerHTML='<b>Scenario Interpretation:</b> '+insight;
+}
+
+function resetSim(){
+  ['sl-sent','sl-eff','sl-hyd','sl-irr'].forEach(id=>document.getElementById(id).value=0);
+  updateSim();
+}
+
+function saveScenario(){
+  const v=getSimValues();
+  const newP=calcProb(v.cl,v.skin,v.price,v.sent,v.eff,v.hyd,v.irr);
+  const baseP=calcProb(v.cl,v.skin,v.price,0,0,0,0);
+  const id=Date.now();
+  savedScenarios.push({id,v,newP,baseP,delta:newP-baseP});
+  renderSaved();
+}
+
+function renderSaved(){
+  const list=document.getElementById('saved-list');
+  if(savedScenarios.length===0){list.innerHTML='';return;}
+  list.innerHTML=savedScenarios.map(s=>{
+    const d=(s.delta*100).toFixed(1);
+    return `<div class="saved-item">
+      <span>C${s.v.cl} · ${s.v.skin} · ${s.v.price}<br>
+        <b>${(s.newP*100).toFixed(1)}%</b> (${d>=0?'+':''}${d}pp)</span>
+      <span class="saved-del" onclick="deleteScenario(${s.id})">✕</span>
+    </div>`;
+  }).join('');
+}
+
+function deleteScenario(id){
+  savedScenarios=savedScenarios.filter(s=>s.id!==id);
+  renderSaved();
+}
+
+// ══════════════════════════════════════════════════════════
+// AREA 4: SEGMENT BUBBLES
+// ══════════════════════════════════════════════════════════
+function drawSegments(){
+  const cs=D.cluster_stats;
+  const sizes=[0,1,2,3].map(c=>cs[c].de_pct*100);  // DE %
+  const recs=[0,1,2,3].map(c=>cs[c].mprob*100);
+  const ns=[0,1,2,3].map(c=>cs[c].de_n);
+
+  Plotly.newPlot('ch-segment',[{
+    type:'scatter',mode:'markers+text',
+    x:sizes,y:recs,
+    text:['C0','C1','C2','C3'],
+    textposition:'middle center',
+    textfont:{size:11,color:'white',family:'Segoe UI'},
+    marker:{
+      size:sizes.map(s=>s*4+20),
+      color:CL_COL,
+      line:{color:'white',width:2}
+    },
+    customdata:[0,1,2,3],
+    hovertemplate:'<b>%{text} %{customdata}</b><br>DE占比: %{x:.1f}%<br>Model P(rec): %{y:.1f}%<br>DE人数: %{text}<extra></extra>',
+  }],{
+    paper_bgcolor:'rgba(0,0,0,0)',plot_bgcolor:'rgba(255,255,255,0)',
+    font:{family:'Segoe UI',color:PAL.dark},
+    xaxis:{title:'Share of DE Reviews (%)',showgrid:true,gridcolor:'#F0EDF7',range:[-2,55]},
+    yaxis:{title:'Model P(Recommendation) (%)',showgrid:true,gridcolor:'#F0EDF7',range:[0,105]},
+    margin:{t:20,r:20,b:50,l:60},
+    shapes:[{type:'line',x0:0,x1:1,y0:.5,y1:.5,xref:'paper',yref:'paper',
+      line:{color:'#CFCCE3',dash:'dash',width:1.5}}],
+    annotations:[
+      {x:25,y:52,text:'P(rec) = 50% baseline',showarrow:false,font:{size:9,color:PAL.light}},
+      {x:cs[1].de_pct*100,y:CL_MPROB[1]*100+8,text:'Highest Risk',showarrow:true,
+        font:{size:10,color:PAL.rose},arrowcolor:PAL.rose,ax:40,ay:0},
+      {x:cs[3].de_pct*100,y:CL_MPROB[3]*100-8,text:'Highest Value',showarrow:true,
+        font:{size:10,color:'#1a7a4a'},arrowcolor:'#1a7a4a',ax:40,ay:0}
+    ]
+  },CFG);
+
+  document.getElementById('ch-segment').on('plotly_click',function(ev){
+    const c=ev.points[0].customdata;
+    showSegmentDetail(c);
+  });
+}
+
+function showSegmentDetail(c){
+  const cs=D.cluster_stats[c];
+  const acts=D.cluster_actions[c]||[];
+  const riskLabel=c===1?'Critical Risk':c===3?'High Opportunity':c===0?'Stable':c===2?'Growth':'';
+  const riskClass=c===1?'risk-critical':c===3?'risk-low':'risk-medium';
+
+  let topDrivers='';
+  if(c===1) topDrivers='<li>High negative sentiment → impact -'+(Math.abs(heatVal('Sentiment-',1))).toFixed(0)+'pp</li><li>High irritation mentions → impact -'+(Math.abs(heatVal('Irritation',1))).toFixed(0)+'pp</li><li>Price expectation gap → impact -'+(Math.abs(heatVal('Price',1))).toFixed(0)+'pp</li>';
+  else if(c===3) topDrivers='<li>High positive sentiment → +'+(heatVal('Sentiment+',3)).toFixed(0)+'pp</li><li>Strong hydration theme → +'+(heatVal('Hydration',3)).toFixed(0)+'pp</li><li>Low irritation mentions → +'+(heatVal('Irritation',3)).toFixed(0)+'pp</li>';
+  else if(c===2) topDrivers='<li>Efficacy theme → +'+(heatVal('Efficacy',2)).toFixed(0)+'pp (most sensitive)</li><li>Positive sentiment → +'+(heatVal('Sentiment+',2)).toFixed(0)+'pp</li>';
+  else topDrivers='<li>Cleansing theme dominant → positive signal</li><li>Positive sentiment → +'+(heatVal('Sentiment+',0)).toFixed(0)+'pp</li>';
+
+  const actLinks=acts.map(aid=>{
+    const a=D.actions.find(x=>x.id===aid);
+    return a?`<button class="goto-btn goto-coral" onclick="gotoAction('${aid}')" style="margin-bottom:4px;width:100%;text-align:left">${aid}: ${a.title}</button>`:'';
+  }).join('');
+
+  document.getElementById('segment-detail').style.display='block';
+  document.getElementById('segment-detail').innerHTML=`
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+      <span style="font-size:22px;font-weight:800;color:${CL_COL[c]}">C${c}</span>
+      <div><div style="font-size:13px;font-weight:700">${cs.label}</div>
+        <div style="font-size:11px;color:#9B92A8">DE: n=${cs.de_n} (${(cs.de_pct*100).toFixed(1)}% of DE) · Model P(rec)=${(cs.mprob*100).toFixed(1)}%</div></div>
+      <span class="risk-chip ${riskClass}" style="margin-left:auto">${riskLabel}</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div><div style="font-size:11px;font-weight:700;color:#9B92A8;margin-bottom:6px">TOP DRIVERS</div>
+        <ul style="list-style:none;font-size:12px;color:#2C2438;line-height:2">${topDrivers}</ul></div>
+      <div><div style="font-size:11px;font-weight:700;color:#9B92A8;margin-bottom:6px">LINKED ACTIONS</div>
+        ${actLinks}</div>
+    </div>`;
+}
+
+function heatVal(feat, cl){
+  return D.heatmap[feat]?D.heatmap[feat][cl]:0;
+}
+
+// ══════════════════════════════════════════════════════════
+// AREA 5: ACTION MATRIX
+// ══════════════════════════════════════════════════════════
+let actionFilter='all';
+function filterActions(cat, btn){
+  actionFilter=cat;
+  document.querySelectorAll('#action-filter-pills .pill').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  drawActionMatrix();
+}
+
+const CAT_COL_MAP={Messaging:PAL.coral,Channel:PAL.pchM,Product:PAL.lav};
+const CAT_LABEL_MAP={Messaging:'Messaging',Channel:'Channel',Product:'Product'};
+
+function drawActionMatrix(){
+  const acts=actionFilter==='all'?D.actions:D.actions.filter(a=>a.cat===actionFilter);
+  Plotly.newPlot('ch-action',[{
+    type:'scatter',mode:'markers+text',
+    x:acts.map(a=>a.feas),y:acts.map(a=>a.impact),
+    text:acts.map(a=>a.id),
+    textposition:'middle center',
+    textfont:{size:10,color:'white',family:'Segoe UI'},
+    marker:{
+      size:acts.map(a=>a.score*2.8),
+      color:acts.map(a=>CAT_COL_MAP[a.cat]||PAL.lav),
+      line:{color:'white',width:2}
+    },
+    customdata:acts.map(a=>a.id),
+    hovertemplate:'<b>%{customdata}</b><br>Impact: %{y}<br>Feasibility: %{x}<br>Score: %{marker.size/2.8:.1f}<extra></extra>',
+  }],{
+    paper_bgcolor:'rgba(0,0,0,0)',plot_bgcolor:'rgba(255,255,255,0)',
+    font:{family:'Segoe UI',color:PAL.dark},
+    xaxis:{title:'Feasibility (1=Difficult → 5=Easy)',range:[1,5.8],showgrid:true,gridcolor:'#F0EDF7',dtick:1},
+    yaxis:{title:'Business Impact (1=Low → 5=High)',range:[1,5.8],showgrid:true,gridcolor:'#F0EDF7',dtick:1},
+    margin:{t:20,r:20,b:50,l:60},
+    shapes:[
+      {type:'rect',x0:3.5,x1:5.8,y0:3.5,y1:5.8,fillcolor:'rgba(241,131,122,.06)',line:{width:0}},
+      {type:'rect',x0:1,x1:3.5,y0:3.5,y1:5.8,fillcolor:'rgba(207,204,227,.06)',line:{width:0}},
+      {type:'line',x0:3.5,x1:3.5,y0:1,y1:5.8,line:{color:'#CFCCE3',dash:'dash',width:1}},
+      {type:'line',x0:1,x1:5.8,y0:3.5,y1:3.5,line:{color:'#CFCCE3',dash:'dash',width:1}},
+    ],
+    annotations:[
+      {x:4.65,y:5.6,text:'Quick Wins',showarrow:false,font:{size:9,color:PAL.coral}},
+      {x:2.25,y:5.6,text:'Strategic',showarrow:false,font:{size:9,color:PAL.mid}}
+    ]
+  },CFG);
+
+  document.getElementById('ch-action').on('plotly_click',function(ev){
+    const id=ev.points[0].customdata;
+    showActionDetail(id);
+  });
+}
+
+function showActionDetail(id){
+  const a=D.actions.find(x=>x.id===id);
+  if(!a)return;
+
+  const evItems=a.evidence.map(e=>`<div class="ev-item">${e}</div>`).join('');
+  const stepItems=a.steps.map(s=>`<div class="step-item">${s}</div>`).join('');
+  const priBg=a.score>=18?'#fdecea':a.score>=13?'#fef3cd':'#edf5fb';
+  const priTc=a.score>=18?'#c0392b':a.score>=13?'#d68910':'#1a5276';
+  const clLink=a.cluster_link!==null
+    ?`<button class="goto-btn goto-lav" onclick="showSegmentDetail(${a.cluster_link});document.getElementById('ch-segment').scrollIntoView({behavior:'smooth'})">View Segment C${a.cluster_link}</button>`:'';
+
+  document.getElementById('action-detail').style.display='block';
+  document.getElementById('action-detail').innerHTML=`
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px">
+      <div>
+        <span style="font-size:18px;font-weight:800;color:${a.color}">${a.id}</span>
+        <span style="font-size:13px;font-weight:700;margin-left:8px">${a.title}</span><br>
+        <span style="font-size:11px;color:#9B92A8">${a.subtitle} · ${CAT_LABEL_MAP[a.cat]||a.cat}</span>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:22px;font-weight:800;color:${a.color}">${a.score}</div>
+        <div style="font-size:10px;color:#9B92A8">${a.impact} × ${a.feas}</div>
+        <span style="display:inline-block;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;background:${priBg};color:${priTc}">
+          ${a.score>=18?'HIGH':a.score>=13?'MEDIUM':'LONG-TERM'}</span>
+      </div>
+    </div>
+    <div style="font-size:11px;font-weight:700;color:#9B92A8;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Evidence (${a.evidence.length} independent sources)</div>
+    ${evItems}
+    <div style="font-size:11px;font-weight:700;color:#9B92A8;text-transform:uppercase;letter-spacing:.6px;margin:10px 0 6px">Implementation Steps</div>
+    ${stepItems}
+    <div style="margin-top:10px;padding:10px 12px;border-radius:8px;background:#FDF0EE;font-size:12px;color:#2C2438">
+      <b>Expected Outcome:</b> ${a.outcome}</div>
+    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+      ${clLink}
+      <button class="goto-btn goto-coral" onclick="setSimCluster(${a.cluster_link})">Verify in Simulator</button>
+    </div>`;
+}
+
+function setSimCluster(c){
+  if(c===null) return;
+  document.getElementById('sim-cluster').value=c;
+  updateSim();
+  document.getElementById('sim-cluster').closest('.card').scrollIntoView({behavior:'smooth'});
+}
+
+// ══════════════════════════════════════════════════════════
+// NAVIGATION HELPERS
+// ══════════════════════════════════════════════════════════
+function gotoAction(id){
+  const el=document.getElementById('ch-action');
+  if(el) el.scrollIntoView({behavior:'smooth',block:'center'});
+  setTimeout(()=>showActionDetail(id),400);
+}
+
+function gotoArea(n){
+  const areas=['ch-driver','ch-driver','ch-driver','sim-cluster','ch-segment','ch-action'];
+  const el=document.getElementById(areas[n]);
+  if(el) el.scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+// ══════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════
+function waitForPlotly(cb,t){
+  t=t||0;
+  if(typeof Plotly!=='undefined') cb();
+  else if(t<80) setTimeout(()=>waitForPlotly(cb,t+1),200);
+}
+
+waitForPlotly(()=>{
+  buildCatFilters();
+  drawDriver();
+  updateSim();
+  drawSegments();
+  drawActionMatrix();
+});
+</script>
+</body>
+</html>
